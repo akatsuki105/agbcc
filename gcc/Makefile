@@ -59,12 +59,12 @@ GENERATED = genrtl.c genrtl.h \
 
 # The usual compiler.
 normal: CFLAGS = $(BASE_CFLAGS)
-normal: $(OBJS)
+normal: $(OBJS) $(RTL_OBJS) $(PRINT_OBJS) $(RTLANAL_OBJS)
 	$(CC) $(CFLAGS) -o agbcc $(OBJS) $(RTL_OBJS) $(PRINT_OBJS) $(RTLANAL_OBJS)
 
 # The old version of the compiler, used for building libgcc.
 old: CFLAGS = $(BASE_CFLAGS) -DOLD_COMPILER
-old: $(OBJS)
+old: $(OBJS) $(RTL_OBJS) $(PRINT_OBJS) $(RTLANAL_OBJS)
 	$(CC) $(CFLAGS) -o old_agbcc $(OBJS) $(RTL_OBJS) $(PRINT_OBJS) $(RTLANAL_OBJS)
 
 # Clear suffixes.
@@ -81,7 +81,11 @@ $(OBJS): %.o: %.c $(DEPDIR)/%.d | $(GENERATED)
 	$(COMPILE) $<
 	$(POSTCOMPILE)
 
-$(RTL_OBJS) $(RTLANAL_OBJS) $(PRINT_OBJS): %.o: %.c $(DEPDIR)/%.d
+# rtl.h includes the generated genrtl.h and tree.h includes tree-check.h, so a
+# parallel build must not start these before those exist.  Only those two are
+# named: the rest of $(GENERATED) is produced by gen* programs that themselves
+# link these objects, and depending on all of it would be circular.
+$(RTL_OBJS) $(RTLANAL_OBJS) $(PRINT_OBJS): %.o: %.c $(DEPDIR)/%.d | genrtl.h tree-check.h
 	$(COMPILE) $<
 	$(POSTCOMPILE)
 

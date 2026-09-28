@@ -3,6 +3,13 @@ set -e
 CCOPT=
 CXXOPT=
 
+# Number of parallel jobs.  Override with e.g.  JOBS=1 ./build.sh  if a build
+# turns out to race.  gcc_arm is left serial: it uses the stock GCC 2.95
+# makefile, which we have not audited for parallel safety.
+if [ -z "$JOBS" ]; then
+	JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
+fi
+
 # error if devkitarm is not installed and binutils-arm-none-eabi is not installed
 if ! ([ -n "$DEVKITARM" ] && [ -d "$DEVKITARM/bin" ]) && ! (command -v arm-none-eabi-as &> /dev/null && command -v arm-none-eabi-ar &> /dev/null) ; then
 	echo "Could not find a binutils installation! Re-read the instructions and make sure you've installed either devkitARM or binutils-arm-none-eabi, depending on your system."
@@ -12,18 +19,18 @@ fi
 if [ ! -z "$CC" ]; then CCOPT=CC=$CC; fi
 if [ ! -z "$CXX" ]; then CXXOPT=CXX=$CXX; fi
 make -C gcc clean
-make -C gcc old -j1 $CCOPT $CXXOPT
+make -C gcc old -j$JOBS $CCOPT $CXXOPT
 mv gcc/old_agbcc .
 make -C gcc clean
-make -C gcc -j1 $CCOPT $CXXOPT
+make -C gcc -j$JOBS $CCOPT $CXXOPT
 mv gcc/agbcc .
 # not sure if the ARM compiler is the old one or the new one (-DOLD_COMPILER)
 rm -f gcc_arm/config.status gcc_arm/config.cache
 cd gcc_arm && ./configure --target=arm-elf --host=i386-linux-gnu && make cc1 && cd ..
 mv gcc_arm/cc1 agbcc_arm
 make -C libgcc clean
-make -C libgcc $CCOPT $CXXOPT
+make -C libgcc -j$JOBS $CCOPT $CXXOPT
 mv libgcc/libgcc.a .
 make -C libc clean
-make -C libc $CCOPT $CXXOPT
+make -C libc -j$JOBS $CCOPT $CXXOPT
 mv libc/libc.a .
