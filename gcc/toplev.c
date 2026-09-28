@@ -591,6 +591,14 @@ int flag_fixed_debug_line_info = 0;
 /* Fix prologue bug in new compiler.  */
 int flag_prologue_bugfix = 0;
 
+/* AGB Developers Kit, revision of 3 Oct 2003: keep the declared signedness
+   of types narrower than a word.  */
+int flag_signed_narrow_modes = 0;
+
+/* AGB Developers Kit, revision of 30 May 2003: comparison against a shifted
+   value.  */
+int flag_fix_shift_compare = 0;
+
 typedef struct
 {
     char *string;
@@ -732,6 +740,10 @@ lang_independent_options f_options[] =
      "Use hex instead of decimal in assembly output"},
     {"fix-debug-line", &flag_fixed_debug_line_info, 1,
      "Generate fixed DWARF line info"},
+    {"signed-narrow-modes", &flag_signed_narrow_modes, 1,
+     "Keep the declared signedness of types narrower than a word in registers (3 Oct 2003 revision)"},
+    {"fix-shift-compare", &flag_fix_shift_compare, 1,
+     "Use the AGB kit rule when folding a comparison against a shifted value (30 May 2003 revision)"},
 #ifndef OLD_COMPILER
     /* This flag fixes a bug in the newer agbcc version that causes `lr` to be
        saved onto the stack in functions where it is not necessary. This is

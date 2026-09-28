@@ -457,3 +457,11 @@ extern int flag_fixed_debug_line_info;
 
 /* Nonzero if prologue bug should be fixed.  */
 extern int flag_prologue_bugfix;
+
+/* Nonzero if a value narrower than a word should keep the signedness it was
+   declared with while it lives in a register.  */
+extern int flag_signed_narrow_modes;
+
+/* Nonzero if a comparison against a shifted value should be folded the way the
+   30 May 2003 AGB kit revision folds it.  */
+extern int flag_fix_shift_compare;

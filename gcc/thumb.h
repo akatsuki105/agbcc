@@ -341,14 +341,20 @@ do {									\
 
 #define POINTER_SIZE 32
 
-#define PROMOTE_MODE(MODE,UNSIGNEDP,TYPE)	\
-{						\
-  if (GET_MODE_CLASS (MODE) == MODE_INT		\
-      && GET_MODE_SIZE (MODE) < 4)		\
-    {						\
-      (UNSIGNEDP) = 1;				\
-      (MODE) = SImode;				\
-    }						\
+/* Anything narrower than a word is kept in a register as if it were unsigned,
+   whatever it was declared as.  -fsigned-narrow-modes drops that assignment, so
+   the signedness the caller passed in survives.  That is what the official
+   03-OCT-03 Thumb patch does: in its cc1 the promote_mode body writes
+   *punsignedp back with the value it read on entry, untouched.  */
+#define PROMOTE_MODE(MODE,UNSIGNEDP,TYPE)			\
+{								\
+  if (GET_MODE_CLASS (MODE) == MODE_INT				\
+      && GET_MODE_SIZE (MODE) < 4)				\
+    {								\
+      if (! flag_signed_narrow_modes)				\
+	(UNSIGNEDP) = 1;					\
+      (MODE) = SImode;						\
+    }								\
 }
 
 #define PARM_BOUNDARY 32

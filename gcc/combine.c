@@ -10176,15 +10176,52 @@ simplify_comparison (code, pop0, pop1)
 	      && INTVAL (XEXP (op0, 1)) < HOST_BITS_PER_WIDE_INT
 	      && mode_width <= HOST_BITS_PER_WIDE_INT
 	      && (nonzero_bits (XEXP (op0, 0), mode)
-		  & (((HOST_WIDE_INT) 1 << INTVAL (XEXP (op0, 1))) - 1)) == 0
-	      && (const_op == 0
-		  || (floor_log2 (const_op) + INTVAL (XEXP (op0, 1))
-		      < mode_width)))
+		  & (((HOST_WIDE_INT) 1 << INTVAL (XEXP (op0, 1))) - 1)) == 0)
 	    {
-	      const_op <<= INTVAL (XEXP (op0, 1));
-	      op1 = GEN_INT (const_op);
-	      op0 = XEXP (op0, 0);
-	      continue;
+	      if (! flag_fix_shift_compare)
+		{
+		  /* Stock 2.95: fold the shift away only while the shifted
+		     constant stays clear of the sign bit.  floor_log2 rejects
+		     every negative C, so there the shift survives.  */
+		  if (const_op == 0
+		      || (floor_log2 (const_op) + INTVAL (XEXP (op0, 1))
+			  < mode_width))
+		    {
+		      const_op <<= INTVAL (XEXP (op0, 1));
+		      op1 = GEN_INT (const_op);
+		      op0 = XEXP (op0, 0);
+		      continue;
+		    }
+		}
+	      else
+		{
+		  /* AGB Developers Kit, revision of 30 May 2003: test the
+		     shifted constant against what the mode can hold, choosing
+		     the test that matches the kind of shift.  */
+		  HOST_WIDE_UINT mask_after_shift
+		    = GET_MODE_MASK (mode) >> INTVAL (XEXP (op0, 1));
+		  HOST_WIDE_UINT overflow_check = const_op;
+
+		  /* Only ASHIFTRT falls through into this case, so op0 being
+		     anything but LSHIFTRT means the value is sign extended.
+		     Bias C so the range check covers the negative half too.  */
+		  if (GET_CODE (op0) != LSHIFTRT)
+		    overflow_check = (mask_after_shift >> 1) + 1 + const_op;
+
+		  if (overflow_check <= mask_after_shift)
+		    {
+		      /* A logical shift always yields a non-negative value, so
+			 once the shift is gone the comparison must become
+			 unsigned to keep its meaning.  */
+		      if (GET_CODE (op0) == LSHIFTRT)
+			code = unsigned_condition (code);
+
+		      const_op <<= INTVAL (XEXP (op0, 1));
+		      op1 = GEN_INT (const_op);
+		      op0 = XEXP (op0, 0);
+		      continue;
+		    }
+		}
 	    }
 
 	  /* If we are using this shift to extract just the sign bit, we
